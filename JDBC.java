@@ -1,27 +1,25 @@
-import java.sql.*;
-import java.util.Scanner;
 import java.io.*;
+import java.sql.*;
 import java.util.InputMismatchException;
+import java.util.Scanner;
 
 public class JDBC {
 
-    // SQL Server connection information (from the prompt)
+    //SQL Server connection information
     final static String HOSTNAME = "genc0000-sql-server.database.windows.net";
     final static String DBNAME = "cs-dsa-4513-sql-db";
     final static String USERNAME = "genc0000";
     final static String PASSWORD = "Maxence01!";
 
-    // Connection string
+    //connection string
     final static String URL =
         String.format("jdbc:sqlserver://%s:1433;database=%s;user=%s;password=%s;"
         + "encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;"
         + "loginTimeout=30;", HOSTNAME, DBNAME, USERNAME, PASSWORD);
 
-    // Menu prompt
+    //menu
     final static String PROMPT =
-        "\n===================================================\n" +
         "WELCOME TO THE NATIONAL PARK SERVICE SYSTEM DATABASE\n" +
-        "===================================================\n" +
         "(1)  Insert new visitor and enroll (Q1)\n" +
         "(2)  Insert new ranger and assign team (Q2)\n" +
         "(3)  Insert new ranger team and set leader (Q3)\n" +
@@ -41,34 +39,46 @@ public class JDBC {
         "(17) Export: Retrieve mailing list to a data file\n" +
         "(18) Quit (All queries are run as Stored Procedures)\n" +
         "Please select an option: ";
+    
+    
+    
+/*
+ * BASICALLY ALL THE STATEMENTS GATHER THE REQUIRED INFORMATION IN ORDER
+ * TO BE ABLE TO CALL THE STORED PROCEDURE
+ * 
+ * EACH PROCEDURE EXECUTES ONE OF THE 15 QUERIES 
+ * 
+ * THIS MAKES THE CODE HERE A LITTLE SHORTER AND MAKES THIS ONLY HAVE TO 
+ * FOCUS ON FORMATTING THE QUERY
+ */
 
     public static void main(String[] args) {
         System.out.println("Connecting to Azure SQL Database...");
         
-        // --- FIX for 'No suitable driver found' error ---
+        //testing to see if driver is there
         try {
-            // Explicitly load the SQL Server JDBC driver class
+            //load the SQL Server JDBC driver class
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-            System.out.println("SQL Server Driver loaded successfully.");
-        } catch (ClassNotFoundException e) {
-            System.out.println("FATAL ERROR: The Microsoft SQL Server JDBC Driver was not found.");
-            System.out.println("The required driver JAR file is missing from the classpath.");
-            System.out.println("Please ensure the mssql-jdbc.jar is included in your project dependencies.");
-            return; // Exit if the required driver is unavailable
+            System.out.println("Driver loaded successfully.");
+        } 
+        catch (ClassNotFoundException e) {
+            System.out.println("DRIVER NOT FOUND");
+            return; //exit if the required driver is unavailable
         }
-        // --- END FIX ---
 
         final Scanner sc = new Scanner(System.in);
         String option = "";
         
-        while (!option.equals("18")) { 
+        while (!option.equals("18")) { //until user chooses to quit
             System.out.println(PROMPT);
             try {
                 option = sc.nextLine().trim();
 
+                //if connection is successful, the the user can go ahead and pick and option
                 try (Connection connection = DriverManager.getConnection(URL)) {
                     System.out.println("Connection successful.");
                     switch (option) {
+                    	   //each case has its own associated method
                         case "1":  insertVisitor(connection, sc); break;
                         case "2":  insertRanger(connection, sc); break;
                         case "3":  insertRangerTeam(connection, sc); break;
@@ -86,18 +96,20 @@ public class JDBC {
                         case "15": deleteExpiredVisitors(connection); break;
                         case "16": importTeamsFromFile(connection, sc); break;
                         case "17": exportMailingListToFile(connection, sc); break;
-                        case "18": System.out.println("Exiting! The Stored Procedures are defined in the accompanying SQL file."); break;
+                        case "18": System.out.println("Bye!."); break;
                         default:   System.out.println("Unrecognized option. Please try again!");
                     }
-                } catch (SQLException e) {
-                    System.out.println("Database Error: Could not connect or execute procedure.");
-                    System.out.println("SQL State: " + e.getSQLState() + " - Message: " + e.getMessage());
+                } 
+                catch (SQLException e) {
+                    System.out.println("CONNECTION ERROR"); 
                 }
 
-            } catch (InputMismatchException | NumberFormatException e) {
+            } 
+            catch (InputMismatchException | NumberFormatException e) {
                 System.out.println("Invalid input format. Please check your types and try again.");
-                sc.nextLine(); // Clear the buffer
-            } catch (Exception e) {
+                sc.nextLine(); //clear buffer
+            } 
+            catch (Exception e) {
                 System.out.println("An unexpected error occurred: " + e.getMessage());
                 e.printStackTrace();
             }
@@ -105,95 +117,178 @@ public class JDBC {
         sc.close();
     }
 
-    // =================================================================
-    // Q1-Q7: INSERT OPERATIONS
-    // =================================================================
+    
 
     private static void insertVisitor(Connection conn, Scanner sc) throws SQLException {
-        System.out.println("--- Q1: Inserting New Visitor ---");
+        System.out.println("Q1: Inserting New Visitor");
         try {
-            System.out.print("First Name: "); String first = sc.nextLine();
-            System.out.print("Last Name: "); String last = sc.nextLine();
-            System.out.print("DOB (YYYY-MM-DD): "); String dob = sc.nextLine();
-            System.out.print("Age: "); int age = sc.nextInt(); sc.nextLine();
-            System.out.print("Gender: "); String gender = sc.nextLine();
-            System.out.print("Street: "); String street = sc.nextLine();
-            System.out.print("City: "); String city = sc.nextLine();
-            System.out.print("State (2-char): "); String state = sc.nextLine();
-            System.out.print("Zip: "); String zip = sc.nextLine();
-            System.out.print("Subscribe to newsletter? (1=Yes, 0=No): "); int sub = sc.nextInt(); sc.nextLine();
+        	// getting all the info
+            System.out.print("First Name: "); 
+            String first = sc.nextLine();
             
-            System.out.print("Program Park ID: "); String progParkId = sc.nextLine();
-            System.out.print("Program Name: "); String progName = sc.nextLine();
-            System.out.print("Accessibility Needs (or NONE): "); String needs = sc.nextLine();
+            System.out.print("Last Name: "); 
+            String last = sc.nextLine();
+            
+            System.out.print("DOB (YYYY-MM-DD): "); 
+            String dob = sc.nextLine();
+            
+            System.out.print("Age: "); 
+            int age = sc.nextInt(); sc.nextLine();
+            
+            System.out.print("Gender: "); 
+            String gender = sc.nextLine();
+            
+            System.out.print("Street: "); 
+            String street = sc.nextLine();
+            
+            System.out.print("City: "); 
+            String city = sc.nextLine();
+            
+            System.out.print("State (2-char): "); 
+            String state = sc.nextLine();
+            
+            System.out.print("Zip: "); 
+            String zip = sc.nextLine();
+            
+            System.out.print("Subscribe to newsletter? (1=Yes, 0=No): "); 
+            int sub = sc.nextInt(); sc.nextLine();
+            
+            System.out.print("Program Park ID: "); 
+            String progParkId = sc.nextLine();
+            
+            System.out.print("Program Name: "); 
+            String progName = sc.nextLine();
+            
+            System.out.print("Accessibility Needs (or NONE): "); 
+            String needs = sc.nextLine();
+            
+            System.out.print("Visitor ID");
+            String visitorId = sc.nextLine();
 
-            String sql = "{CALL sp_InsertVisitorAndEnroll(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}";
+            //? placeholders
+            String sql = "{CALL sp_InsertVisitorAndEnroll(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}";
             try (CallableStatement stmt = conn.prepareCall(sql)) {
-                stmt.setString(1, first); stmt.setString(2, last); 
-                stmt.setDate(3, Date.valueOf(dob)); stmt.setInt(4, age);
-                stmt.setString(5, gender); stmt.setString(6, street); 
-                stmt.setString(7, city); stmt.setString(8, state); 
-                stmt.setString(9, zip); stmt.setBoolean(10, sub == 1);
-                stmt.setString(11, progParkId); stmt.setString(12, progName);
-                stmt.setString(13, progParkId); // Assuming program park id is the park id for the enrollment
-                stmt.setString(14, needs);
-                stmt.registerOutParameter(15, Types.VARCHAR); // Output parameter for NewPersonID
+                
+                stmt.setString(1, first); 
+                stmt.setString(2, last); 
+                stmt.setDate(3, Date.valueOf(dob)); 
+                stmt.setInt(4, age);
+                stmt.setString(5, gender); 
+                stmt.setString(6, street); 
+                stmt.setString(7, city); 
+                stmt.setString(8, state); 
+                stmt.setString(9, zip); 
+                stmt.setBoolean(10, sub == 1);
+                
+                stmt.setString(11, progParkId); 
+                stmt.setString(12, needs);
+                
+                stmt.setString(13, visitorId);
                 
                 stmt.executeUpdate();
-                System.out.println("Success: Visitor inserted (ID: " + stmt.getString(15) + ") and enrolled in " + progName);
+                System.out.println("Success: Visitor inserted (ID: " + visitorId + ") and enrolled.");
             }
-        } catch (Exception e) {
+        } 
+        catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
         }
     }
 
     private static void insertRanger(Connection conn, Scanner sc) throws SQLException {
-        System.out.println("--- Q2: Inserting New Ranger ---");
+        System.out.println("Q2: Inserting New Ranger");
         try {
-            System.out.print("First Name: "); String first = sc.nextLine();
-            System.out.print("Last Name: "); String last = sc.nextLine();
-            System.out.print("DOB (YYYY-MM-DD): "); String dob = sc.nextLine();
-            System.out.print("Age: "); int age = sc.nextInt(); sc.nextLine();
-            System.out.print("Gender: "); String gender = sc.nextLine();
-            System.out.print("Street: "); String street = sc.nextLine();
-            System.out.print("City: "); String city = sc.nextLine();
-            System.out.print("State (2-char): "); String state = sc.nextLine();
-            System.out.print("Zip: "); String zip = sc.nextLine();
-            System.out.print("Subscribe to newsletter? (1=Yes, 0=No): "); int sub = sc.nextInt(); sc.nextLine();
-            System.out.print("Team ID to assign: "); String teamID = sc.nextLine();
+        	
+        	//getting all the info
+            System.out.print("First Name: "); 
+            String first = sc.nextLine();
             
-            // Placeholder call, replace with actual SP parameters
-            String sql = "{CALL sp_InsertRangerAndAssignTeam(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}"; 
+            System.out.print("Last Name: "); 
+            String last = sc.nextLine();
+            System.out.print("DOB (YYYY-MM-DD): "); 
+            String dob = sc.nextLine();
+            
+            System.out.print("Age: "); 
+            int age = sc.nextInt(); sc.nextLine();
+            
+            System.out.print("Gender: "); 
+            String gender = sc.nextLine();
+            
+            System.out.print("Street: "); 
+            String street = sc.nextLine();
+            
+            System.out.print("City: "); 
+            String city = sc.nextLine();
+            
+            System.out.print("State (2-char): "); 
+            String state = sc.nextLine();
+            
+            System.out.print("Zip: "); 
+            String zip = sc.nextLine();
+            
+            System.out.print("Subscribe to newsletter? (1=Yes, 0=No): "); 
+            int sub = sc.nextInt(); sc.nextLine();
+            
+            System.out.print("Team ID to assign: "); 
+            String teamID = sc.nextLine();
+            
+            System.out.print("Ranger ID: ");
+            String rangerID = sc.nextLine();
+            
+            //? placeholders
+            String sql = "{CALL sp_InsertRangerAndAssignTeam(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}"; 
             try (CallableStatement stmt = conn.prepareCall(sql)) {
-                stmt.setString(1, first); stmt.setString(2, last); 
-                stmt.setDate(3, Date.valueOf(dob)); stmt.setInt(4, age);
-                stmt.setString(5, gender); stmt.setString(6, street); 
-                stmt.setString(7, city); stmt.setString(8, state); 
-                stmt.setString(9, zip); stmt.setBoolean(10, sub == 1);
+            	
+            	
+                stmt.setString(1, first); 
+                stmt.setString(2, last); 
+                stmt.setDate(3, Date.valueOf(dob)); 
+                stmt.setInt(4, age);
+                stmt.setString(5, gender); 
+                stmt.setString(6, street); 
+                stmt.setString(7, city); 
+                stmt.setString(8, state); 
+                stmt.setString(9, zip); 
+                stmt.setBoolean(10, sub == 1);
                 stmt.setString(11, teamID);
+                stmt.setString(12, rangerID);
                 
+                //running the statement with the updated vlaues
                 stmt.executeUpdate();
                 System.out.println("Success: Ranger inserted and assigned to team " + teamID);
             }
-        } catch (Exception e) {
+        } 
+        catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
         }
     }
 
     private static void insertRangerTeam(Connection conn, Scanner sc) throws SQLException {
-        System.out.println("--- Q3: Inserting New Ranger Team ---");
+        System.out.println("Q3: Inserting New Ranger Team");
         try {
-            System.out.print("Team Focus Area: "); String focus = sc.nextLine();
-            System.out.print("Leader Person/Ranger ID: "); String leaderID = sc.nextLine();
-
-            String sql = "{CALL sp_InsertRangerTeamAndLeader(?, ?)}"; 
+        	//getting all the info
+            System.out.print("Team Focus Area: "); 
+            String focus = sc.nextLine();
+            
+            System.out.print("Leader Person/Ranger ID: "); 
+            String leaderID = sc.nextLine();
+            
+            System.out.print("Team ID: ");
+            String teamID = sc.nextLine();
+            
+            //? placeholders
+            String sql = "{CALL sp_InsertRangerTeamAndLeader(?, ?, ?)}"; 
             try (CallableStatement stmt = conn.prepareCall(sql)) {
+            	
                 stmt.setString(1, focus);
                 stmt.setString(2, leaderID);
+                stmt.setString(3, teamID);
+                
+                //calling the sql statment
                 stmt.executeUpdate();
                 System.out.println("Success: New team created with leader " + leaderID);
             }
-        } catch (Exception e) {
+        } 
+        catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
         }
     }
@@ -201,58 +296,87 @@ public class JDBC {
     private static void insertDonation(Connection conn, Scanner sc) throws SQLException {
         System.out.println("--- Q4: Inserting New Donation ---");
         try {
+        	
             System.out.print("Donor Person ID (Enter 'ANONYMOUS' or leave blank for anonymous): "); 
             String donorID = sc.nextLine();
             if (donorID.isEmpty()) donorID = "ANONYMOUS";
             
-            System.out.print("Amount: "); double amount = sc.nextDouble(); sc.nextLine();
-            System.out.print("Campaign Name: "); String campaign = sc.nextLine();
+            System.out.print("Amount: "); 
+            double amount = sc.nextDouble(); 
+            sc.nextLine();
+            System.out.print("Campaign Name: "); 
+            String campaign = sc.nextLine();
 
+            //? placeholders
             String sql = "{CALL sp_InsertDonation(?, ?, ?)}"; 
             try (CallableStatement stmt = conn.prepareCall(sql)) {
+            	
                 if (donorID.equals("ANONYMOUS")) {
-                    stmt.setNull(1, Types.VARCHAR); // Set NULL for anonymous
-                } else {
+                    stmt.setNull(1, Types.VARCHAR); //set NULL for anonymous
+                } 
+                else {
                     stmt.setString(1, donorID);
                 }
+                
                 stmt.setDouble(2, amount);
                 stmt.setString(3, campaign);
                 stmt.executeUpdate();
                 System.out.println("Success: Donation of $" + amount + " recorded.");
             }
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
+        } 
+        catch (Exception e) {
+        	System.out.println("Error: " + e.getMessage());
         }
     }
     
     private static void insertResearcher(Connection conn, Scanner sc) throws SQLException {
-        System.out.println("--- Q5: Inserting New Researcher ---");
+        System.out.println("Q5: Inserting New Researcher");
         try {
-            System.out.print("First Name: "); String first = sc.nextLine();
-            System.out.print("Last Name: "); String last = sc.nextLine();
-            System.out.print("DOB (YYYY-MM-DD): "); String dob = sc.nextLine();
-            System.out.print("Age: "); int age = sc.nextInt(); sc.nextLine();
-            System.out.print("Gender: "); String gender = sc.nextLine();
-            System.out.print("Street: "); String street = sc.nextLine();
-            System.out.print("City: "); String city = sc.nextLine();
-            System.out.print("State (2-char): "); String state = sc.nextLine();
-            System.out.print("Zip: "); String zip = sc.nextLine();
-            System.out.print("Subscribe to newsletter? (1=Yes, 0=No): "); int sub = sc.nextInt(); sc.nextLine();
+        	//collecting all of the information
+            System.out.print("First Name: "); 
+            String first = sc.nextLine();
+            System.out.print("Last Name: "); 
+            String last = sc.nextLine();
+            System.out.print("DOB (YYYY-MM-DD): "); 
+            String dob = sc.nextLine();
+            System.out.print("Age: "); 
+            int age = sc.nextInt(); sc.nextLine();
+            System.out.print("Gender: "); 
+            String gender = sc.nextLine();
+            System.out.print("Street: "); 
+            String street = sc.nextLine();
+            System.out.print("City: "); 
+            String city = sc.nextLine();
+            System.out.print("State (2-char): "); 
+            String state = sc.nextLine();
+            System.out.print("Zip: "); 
+            String zip = sc.nextLine();
+            System.out.print("Subscribe to newsletter? (1=Yes, 0=No): "); 
+            int sub = sc.nextInt(); sc.nextLine();
+            System.out.print("Researcher id: ");
+            String researcherID = sc.nextLine();
             
             System.out.print("Field of Research: "); String field = sc.nextLine();
             System.out.print("Initial Salary: "); double salary = sc.nextDouble(); sc.nextLine();
             System.out.print("Team ID for initial association: "); String teamID = sc.nextLine();
             
-            String sql = "{CALL sp_InsertResearcherAndAssociate(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}"; 
+            //inserting all of the information into a correctly formatted call to a procedure
+            String sql = "{CALL sp_InsertResearcherAndAssociate(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}"; 
             try (CallableStatement stmt = conn.prepareCall(sql)) {
-                stmt.setString(1, first); stmt.setString(2, last); 
-                stmt.setDate(3, Date.valueOf(dob)); stmt.setInt(4, age);
-                stmt.setString(5, gender); stmt.setString(6, street); 
-                stmt.setString(7, city); stmt.setString(8, state); 
-                stmt.setString(9, zip); stmt.setBoolean(10, sub == 1);
+                stmt.setString(1, first); 
+                stmt.setString(2, last); 
+                stmt.setDate(3, Date.valueOf(dob)); 
+                stmt.setInt(4, age);
+                stmt.setString(5, gender); 
+                stmt.setString(6, street); 
+                stmt.setString(7, city); 
+                stmt.setString(8, state); 
+                stmt.setString(9, zip); 
+                stmt.setBoolean(10, sub == 1);
                 stmt.setString(11, field);
                 stmt.setDouble(12, salary);
                 stmt.setString(13, teamID);
+                stmt.setString(14, researcherID);
                 
                 stmt.executeUpdate();
                 System.out.println("Success: Researcher inserted and associated with team " + teamID);
@@ -263,7 +387,7 @@ public class JDBC {
     }
 
     private static void insertReport(Connection conn, Scanner sc) throws SQLException {
-        System.out.println("--- Q6: Inserting Report ---");
+        System.out.println("Q6: Inserting Report");
         try {
             System.out.print("Team ID submitting report: "); String teamID = sc.nextLine();
             System.out.print("Researcher ID receiving report: "); String researcherID = sc.nextLine();
@@ -283,7 +407,7 @@ public class JDBC {
     }
 
     private static void insertParkProgram(Connection conn, Scanner sc) throws SQLException {
-        System.out.println("--- Q7: Inserting New Park Program ---");
+        System.out.println("Q7: Inserting New Park Program");
         try {
             System.out.print("Park Name: "); String parkID = sc.nextLine();
             System.out.print("Program Name: "); String progName = sc.nextLine();
@@ -307,23 +431,24 @@ public class JDBC {
             System.out.println("Error: " + e.getMessage());
         }
     }
-    
-    // =================================================================
-    // Q8-Q13: RETRIEVAL OPERATIONS
-    // =================================================================
 
     private static void retrieveEmergencyContacts(Connection conn, Scanner sc) throws SQLException {
-        System.out.println("--- Q8: Retrieve Emergency Contacts ---");
+        System.out.println("Q8: Retrieve Emergency Contacts");
         System.out.print("Enter the Person ID: ");
         String personID = sc.nextLine();
         
         String sql = "{CALL sp_RetrieveEmergencyContacts(?)}";
         try (CallableStatement stmt = conn.prepareCall(sql)) {
             stmt.setString(1, personID);
+            
+            //runs the query and stores the result in rs to be read
             try (ResultSet rs = stmt.executeQuery()) {
-                System.out.println("\n--- Emergency Contacts for ID: " + personID + " ---");
-                System.out.printf("%-30s | %-20s\n", "Name", "Phone Number");
-                System.out.println("------------------------------------------------------");
+                System.out.println("\n Emergency Contacts for ID: " + personID);
+                
+                //this format puts results in column format
+                System.out.printf("%-30s | %-20s\n", "Name", "Phone Number"); 
+                
+                //since there can be multiple
                 while (rs.next()) {
                     System.out.printf("%-30s | %-20s\n", rs.getString("name"), rs.getString("phone_number"));
                 }
@@ -332,7 +457,7 @@ public class JDBC {
     }
     
     private static void retrieveVisitorsInProgram(Connection conn, Scanner sc) throws SQLException {
-        System.out.println("--- Q9: Retrieve Visitors in Program ---");
+        System.out.println("Q9: Retrieve Visitors in Program");
         System.out.print("Enter Program Park ID: "); String parkID = sc.nextLine();
         System.out.print("Enter Program Name: "); String progName = sc.nextLine();
         
@@ -340,12 +465,17 @@ public class JDBC {
         try (CallableStatement stmt = conn.prepareCall(sql)) {
             stmt.setString(1, parkID);
             stmt.setString(2, progName);
+            
+            //runs the query and stores the reult in rs to be read
             try (ResultSet rs = stmt.executeQuery()) {
-                System.out.println("\n--- Visitors in " + progName + " ---");
+                System.out.println("\n Visitors in " + progName);
+                
+                //this format puts results in column format
                 System.out.printf("%-20s | %-50s\n", "Name", "Accessibility Needs");
-                System.out.println("--------------------------------------------------------------------------");
                 while (rs.next()) {
                     String name = rs.getString("first") + " " + rs.getString("last");
+                    
+                    //this format puts results in column format
                     System.out.printf("%-20s | %-50s\n", name, rs.getString("needs"));
                 }
             }
@@ -353,7 +483,7 @@ public class JDBC {
     }
 
     private static void retrieveProgramsByDate(Connection conn, Scanner sc) throws SQLException {
-        System.out.println("--- Q10: Retrieve Programs by Date ---");
+        System.out.println("Q10: Retrieve Programs by Date");
         System.out.print("Enter Park Name: "); String parkID = sc.nextLine();
         System.out.print("Enter Start Date threshold (YYYY-MM-DD): "); String date = sc.nextLine();
         
@@ -362,10 +492,13 @@ public class JDBC {
             stmt.setString(1, parkID);
             stmt.setDate(2, Date.valueOf(date));
             try (ResultSet rs = stmt.executeQuery()) {
-                System.out.println("\n--- Programs in " + parkID + " starting after " + date + " ---");
+                System.out.println("\n Programs in " + parkID + " starting after " + date);
+                
+                //this format puts results in column format
                 System.out.printf("%-30s | %-10s | %-15s\n", "Name", "Type", "Start Date");
-                System.out.println("------------------------------------------------------------------");
+                
                 while (rs.next()) {
+                	//this format puts results in column format
                     System.out.printf("%-30s | %-10s | %-15s\n", 
                         rs.getString("name"), rs.getString("type"), rs.getDate("start_date"));
                 }
@@ -374,7 +507,7 @@ public class JDBC {
     }
 
     private static void retrieveAnonymousDonations(Connection conn, Scanner sc) throws SQLException {
-        System.out.println("--- Q11: Retrieve Anonymous Donations ---");
+        System.out.println("Q11: Retrieve Anonymous Donations");
         System.out.print("Enter Target Month (1-12): "); int month = sc.nextInt(); sc.nextLine();
         System.out.print("Enter Target Year: "); int year = sc.nextInt(); sc.nextLine();
         
@@ -382,11 +515,15 @@ public class JDBC {
         try (CallableStatement stmt = conn.prepareCall(sql)) {
             stmt.setInt(1, month);
             stmt.setInt(2, year);
+            
             try (ResultSet rs = stmt.executeQuery()) {
-                System.out.println("\n--- Anonymous Donation Summary for " + month + "/" + year + " ---");
+       
+                System.out.println("\n Anonymous Donation Summary for " + month + "/" + year);
+                
+                //this format puts results in column format
                 System.out.printf("%-15s | %-15s | %-15s\n", "Period", "Total ($)", "Average ($)");
-                System.out.println("----------------------------------------------------");
-                while (rs.next()) {
+                
+                while (rs.next()) { //checls for multiple donations
                     System.out.printf("%-15s | %-15.2f | %-15.2f\n", 
                         rs.getString("DonationPeriod"), rs.getDouble("TotalDonation"), rs.getDouble("AverageDonation"));
                 }
@@ -403,9 +540,10 @@ public class JDBC {
             stmt.setString(1, teamID);
             try (ResultSet rs = stmt.executeQuery()) {
                 System.out.println("\n--- Rangers in Team " + teamID + " ---");
-                System.out.printf("%-20s | %-10s | %-50s | %-10s\n", 
-                    "Name", "Service (Yrs)", "Certifications", "Role");
-                System.out.println("---------------------------------------------------------------------------------------------------");
+                
+                //this format puts results in column format
+                System.out.printf("%-20s | %-10s | %-50s | %-10s\n", "Name", "Service (Yrs)", "Certifications", "Role");
+                
                 while (rs.next()) {
                     String name = rs.getString("first") + " " + rs.getString("last");
                     System.out.printf("%-20s | %-10d | %-50s | %-10s\n", 
@@ -416,16 +554,17 @@ public class JDBC {
     }
 
     private static void retrieveAllIndividuals(Connection conn) throws SQLException {
-        System.out.println("--- Q13: Retrieve All Individuals ---");
+        System.out.println("Q13: Retrieve All Individuals");
         
         String sql = "{CALL sp_RetrieveAllIndividuals}";
         try (CallableStatement stmt = conn.prepareCall(sql)) {
             try (ResultSet rs = stmt.executeQuery()) {
-                System.out.println("\n--- All Individuals ---");
-                System.out.printf("%-35s | %-20s | %-50s | %-15s\n", 
-                    "ID", "Name", "Address", "Subscribed");
-                System.out.println("--------------------------------------------------------------------------------------------------------------------------------");
-                while (rs.next()) {
+                System.out.println("\n All Individuals");
+                
+                //this format puts results in column format
+                System.out.printf("%-35s | %-20s | %-50s | %-15s\n", "ID", "Name", "Address", "Subscribed");
+                
+                while (rs.next()) { //lists all individuals
                     String name = rs.getString("first") + " " + rs.getString("last");
                     String address = rs.getString("street") + ", " + rs.getString("city") + ", " + rs.getString("state") + " " + rs.getString("zip_code");
                     System.out.printf("%-35s | %-20s | %-50s | %-15s\n", 
@@ -435,9 +574,7 @@ public class JDBC {
         }
     }
 
-    // =================================================================
-    // Q14-Q15: UPDATE / DELETE OPERATIONS
-    // =================================================================
+
 
     private static void updateResearcherSalary(Connection conn) throws SQLException {
         System.out.println("--- Q14: Updating Researcher Salaries ---");
@@ -449,7 +586,7 @@ public class JDBC {
     }
 
     private static void deleteExpiredVisitors(Connection conn) throws SQLException {
-        System.out.println("--- Q15: Deleting Expired Visitors ---");
+        System.out.println("Q15: Deleting Expired Visitors");
         String sql = "{CALL sp_DeleteExpiredVisitors}";
         try (CallableStatement stmt = conn.prepareCall(sql)) {
             stmt.executeUpdate();
@@ -457,14 +594,12 @@ public class JDBC {
         }
     }
 
-    // =================================================================
-    // Q16-Q17: FILE I/O OPERATIONS
-    // =================================================================
+  
     
-    // Q16: Import: enter new teams from a data file (using CSV)
+    //Q16: Import: enter new teams from a csv file
     private static void importTeamsFromFile(Connection conn, Scanner sc) throws SQLException, IOException {
-        System.out.println("--- Q16: Import New Teams from File ---");
-        System.out.print("Enter input file name (e.g., teams.csv). Format: FocusArea,LeaderID: ");
+        System.out.println("Q16: Import New Teams from File");
+        System.out.print("Enter input file name (ex: teams.csv). Format: FocusArea,LeaderID: ");
         String fileName = sc.nextLine();
         int teamsImported = 0;
 
@@ -472,6 +607,8 @@ public class JDBC {
             String line;
             String sql = "{CALL sp_InsertRangerTeamAndLeader(?, ?)}"; 
             try (CallableStatement stmt = conn.prepareCall(sql)) {
+            	
+            	//loops through all rows to import
                 while ((line = br.readLine()) != null) {
                     String[] data = line.split(",");
                     if (data.length < 2) continue;
@@ -485,16 +622,17 @@ public class JDBC {
                     teamsImported++;
                 }
             }
-        } catch (FileNotFoundException e) {
+        } 
+        catch (FileNotFoundException e) {
             System.out.println("Error: File not found: " + fileName);
             return;
         }
         System.out.println(teamsImported + " new ranger teams imported successfully from " + fileName);
     }
 
-    // Q17: Export: Retrieve names and mailing addresses of all people on the mailing list
+    //Q17: Export: Retrieve names and mailing addresses of all people on the mailing list
     private static void exportMailingListToFile(Connection conn, Scanner sc) throws SQLException, IOException {
-        System.out.println("--- Q17: Export Mailing List to File ---");
+        System.out.println("Q17: Export Mailing List to File");
         System.out.print("Enter output file name (e.g., mailing_list.txt): ");
         String fileName = sc.nextLine();
         
@@ -505,7 +643,7 @@ public class JDBC {
              FileWriter fw = new FileWriter(fileName);
              PrintWriter pw = new PrintWriter(fw)) {
             
-            // Write header
+            //write header
             pw.println("Name|Street|City|State|Zip Code");
 
             int recordsExported = 0;
@@ -516,7 +654,7 @@ public class JDBC {
                 String state = rs.getString("state");
                 String zip = rs.getString("zip_code");
                 
-                // Write data row (pipe-separated)
+                //write data row (pipe-separated)
                 pw.printf("%s|%s|%s|%s|%s\n", name, street, city, state, zip);
                 recordsExported++;
             }
