@@ -1,9 +1,9 @@
-import java.io.*;
 import java.sql.*;
-import java.util.InputMismatchException;
 import java.util.Scanner;
+import java.io.*;
+import java.util.InputMismatchException;
 
-public class JDBC {
+public class Genchev_Encho_IP_Task5b {
 
     //SQL Server connection information
     final static String HOSTNAME = "genc0000-sql-server.database.windows.net";
@@ -532,7 +532,7 @@ public class JDBC {
     }
 
     private static void retrieveRangersInTeam(Connection conn, Scanner sc) throws SQLException {
-        System.out.println("--- Q12: Retrieve Rangers in Team ---");
+        System.out.println("Q12: Retrieve Rangers in Team");
         System.out.print("Enter Team ID: "); String teamID = sc.nextLine();
         
         String sql = "{CALL sp_RetrieveRangersInTeam(?)}";
@@ -577,7 +577,7 @@ public class JDBC {
 
 
     private static void updateResearcherSalary(Connection conn) throws SQLException {
-        System.out.println("--- Q14: Updating Researcher Salaries ---");
+        System.out.println("Q14: Updating Researcher Salaries");
         String sql = "{CALL sp_UpdateResearcherSalary}";
         try (CallableStatement stmt = conn.prepareCall(sql)) {
             int rowsAffected = stmt.executeUpdate();
@@ -597,27 +597,34 @@ public class JDBC {
   
     
     //Q16: Import: enter new teams from a csv file
+  //Q16: Import: enter new teams from a csv file
     private static void importTeamsFromFile(Connection conn, Scanner sc) throws SQLException, IOException {
         System.out.println("Q16: Import New Teams from File");
-        System.out.print("Enter input file name (ex: teams.csv). Format: FocusArea,LeaderID: ");
+        //file format is now FocusArea,LeaderID,TeamID
+        System.out.print("Enter input file name (ex: teams.csv). Format: FocusArea,LeaderID,TeamID: "); 
         String fileName = sc.nextLine();
         int teamsImported = 0;
 
         try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
             String line;
-            String sql = "{CALL sp_InsertRangerTeamAndLeader(?, ?)}"; 
+            //SQL string must have 3 placeholders
+            String sql = "{CALL sp_InsertRangerTeamAndLeader(?, ?, ?)}"; 
             try (CallableStatement stmt = conn.prepareCall(sql)) {
             	
-            	//loops through all rows to import
+                //loops through all rows to import
                 while ((line = br.readLine()) != null) {
                     String[] data = line.split(",");
-                    if (data.length < 2) continue;
+                    //must have 3 data elements now
+                    if (data.length < 3) continue; 
                     
                     String focusArea = data[0].trim();
                     String leaderID = data[1].trim();
+                    String teamID = data[2].trim(); // New: Get TeamID from CSV
 
                     stmt.setString(1, focusArea);
                     stmt.setString(2, leaderID);
+                    stmt.setString(3, teamID); // Use TeamID from CSV
+                    
                     stmt.executeUpdate();
                     teamsImported++;
                 }
@@ -661,4 +668,3 @@ public class JDBC {
             System.out.println(recordsExported + " mailing list records exported to " + fileName + " successfully.");
         }
     }
-}
